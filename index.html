@@ -41,6 +41,8 @@
     </div>
     <div id="questionContainer"></div>
     <div id="optionsContainer"></div>
+    <!-- 다음문제 버튼: 문제 판정 후에만 활성화 -->
+    <button id="nextButton" class="hidden">다음문제</button>
   </div>
 
   <!-- 게임 종료 화면 -->
@@ -95,69 +97,36 @@
     }
 
     // -------------------------------
-    // 문제 풀이는 4가지 유형 (각 유형 5문항, 총 20문항)
-    // 
-    // [유형 1] : "2^k × a의 약수의 개수가 T가 되도록 하는, N 이하의 자연수 a의 개수는?"
-    //     예시:
-    //     1. k = 4, T = 10, N = 10  → 정답: 3  
-    //     2. k = 3, T = 8, N = 15   → 정답: 5  
-    //     3. k = 2, T = 9, N = 20   → 정답: 1  
-    //     4. k = 5, T = 12, N = 20  → 정답: 7  
-    //     5. k = 3, T = 16, N = 30  → 정답: 3  
-    //
-    // [유형 2] : 네 개의 숫자를 한 번씩 사용하여 네 자리 수 만들기 문제
-    //     예시:
-    //     1. 숫자 {0,1,2,3} → a: 4의 배수 중 최솟값, b: 3의 배수 중 최댓값 → 옳은 보기: a+b는 2,3의 배수이고 5의 배수는 아니다.
-    //     2. 숫자 {1,2,3,6} → a: 4의 배수 중 최솟값, b: 3의 배수 중 최댓값 → 옳은 보기: a+b는 3의 배수이고 5의 배수는 아니다.
-    //     3. 숫자 {0,2,5,7} → a: 5의 배수 중 최솟값, b: 짝수 중에서 가장 작은 수 → 옳은 보기: a+b는 5의 배수이고 2의 배수가 아니다.
-    //     4. 숫자 {0,4,6,8} → a: 6의 배수 중 최솟값, b: 8의 배수 중 최댓값 → 옳은 보기: a는 4의 배수이고 b는 9의 배수이다.
-    //     5. 숫자 {1,3,5,7} → a: 7의 배수 중 최솟값, b: 5의 배수 중 최솟값 → 옳은 보기: a는 7의 배수이고 b는 5의 배수이다.
-    //
-    // [유형 3] : 보기의 옳은 명제를 모두 몇 개 골라야 하는가? (답은 숫자)
-    //     예시:
-    //     1. 보기: ㄱ. 두 홀수(단, 1이 아닌)의 곱은 합성수이다. ㄴ. 모든 자연수는 약수가 2개 이상이다. ㄷ. 합성수는 모두 짝수이다. ㄹ. 소수이면서 합성수인 자연수가 있다. ㅁ. 모든 합성수는 소수의 곱으로 나타낼 수 있다. → 정답: 2
-    //     2. 보기: a. 모든 소수는 홀수이다. b. 1은 소수이면서 합성수이다. c. 두 짝수의 합은 짝수이다. d. 모든 짝수는 합성수이다. e. 소수는 자기 자신과 1 이외의 약수를 갖지 않는다. → 정답: 2
-    //     3. 보기: a. 모든 짝수의 곱은 짝수이다. b. 모든 홀수의 합은 홀수이다. c. 2와 3은 연속하는 소수이다. d. 1은 약수의 개수가 1개이다. e. 합성수는 항상 두 개 이상의 소인수로 이루어져 있다. → 정답: 4
-    //     4. 보기: a. 2의 배수는 모두 짝수이다. b. 3의 배수의 합은 항상 3의 배수이다. c. 모든 합성수는 짝수이다. d. 1은 소수이다. e. 0은 합성수이다. → 정답: 2
-    //     5. 보기: a. 만약 \\(a \\times b\\) (\\(a\\)와 \\(b\\)가 서로소)이면 \\(a \\times b\\)의 약수의 개수는 \\(a\\)와 \\(b\\)의 약수의 곱과 같다. b. \\(2\\)는 소수이지만 \\(4\\)는 소수가 아니다. c. 모든 소수는 합성수이다. d. \\(1\\)은 약수가 1개이고, 합성수는 약수가 3개 이상이다. e. 홀수는 모두 소수이다. → 정답: 3
-    //
-    // [유형 4] : n이 소수일 때, \\(X \\div (n - Y)\\)가 자연수가 되도록 하는 모든 n의 합
-    //     예시:
-    //     1. \\(X=165,\\, Y=4\\) → 정답: 127  
-    //     2. \\(X=140,\\, Y=4\\) → 정답: 16  
-    //     3. \\(X=84,\\, Y=2\\) → 정답: 31  
-    //     4. \\(X=168,\\, Y=5\\) → 정답: 466  
-    //     5. \\(X=96,\\, Y=6\\) → 정답: 7
+    // 문제 목록
     // -------------------------------
-
     const questions = [
-      // 유형 1 (5문항)
+      // [유형 1] (각 문제에 "단, a는 홀수이다." 조건 추가)
       {
-        question: "다음 중 \\(2^4 \\times a\\) 의 약수의 개수가 \\(10\\)이 되도록 하는 \\(10\\) 이하의 자연수 \\(a\\)의 개수는?",
+        question: "다음 중 \\(2^4 \\times a\\) 의 약수의 개수가 \\(10\\)이 되도록 하는, \\(10\\) 이하의 자연수 \\(a\\)의 개수는? (단, \\(a\\)는 홀수이다.)",
         options: ["1", "2", "3", "4", "5"],
         correct: 2
       },
       {
-        question: "다음 중 \\(2^3 \\times a\\) 의 약수의 개수가 \\(8\\)이 되도록 하는 \\(15\\) 이하의 자연수 \\(a\\)의 개수는?",
+        question: "다음 중 \\(2^3 \\times a\\) 의 약수의 개수가 \\(8\\)이 되도록 하는, \\(15\\) 이하의 자연수 \\(a\\)의 개수는? (단, \\(a\\)는 홀수이다.)",
         options: ["3", "4", "5", "6", "7"],
         correct: 2
       },
       {
-        question: "다음 중 \\(2^2 \\times a\\) 의 약수의 개수가 \\(9\\)가 되도록 하는 \\(20\\) 이하의 자연수 \\(a\\)의 개수는?",
+        question: "다음 중 \\(2^2 \\times a\\) 의 약수의 개수가 \\(9\\)가 되도록 하는, \\(20\\) 이하의 자연수 \\(a\\)의 개수는? (단, \\(a\\)는 홀수이다.)",
         options: ["0", "1", "2", "3", "4"],
         correct: 1
       },
       {
-        question: "다음 중 \\(2^5 \\times a\\) 의 약수의 개수가 \\(12\\)가 되도록 하는 \\(20\\) 이하의 자연수 \\(a\\)의 개수는?",
+        question: "다음 중 \\(2^5 \\times a\\) 의 약수의 개수가 \\(12\\)가 되도록 하는, \\(20\\) 이하의 자연수 \\(a\\)의 개수는? (단, \\(a\\)는 홀수이다.)",
         options: ["5", "6", "7", "8", "9"],
         correct: 2
       },
       {
-        question: "다음 중 \\(2^3 \\times a\\) 의 약수의 개수가 \\(16\\)이 되도록 하는 \\(30\\) 이하의 자연수 \\(a\\)의 개수는?",
+        question: "다음 중 \\(2^3 \\times a\\) 의 약수의 개수가 \\(16\\)이 되도록 하는, \\(30\\) 이하의 자연수 \\(a\\)의 개수는? (단, \\(a\\)는 홀수이다.)",
         options: ["2", "3", "4", "5", "6"],
         correct: 1
       },
-      // 유형 2 (5문항)
+      // [유형 2]
       {
         question: "네 개의 숫자 \\(0, 1, 2, 3\\)을 각각 한 번씩 이용하여 네 자리의 자연수를 만들 때, \\(4\\)의 배수 중에서 가장 작은 수를 \\(a\\)와, \\(3\\)의 배수 중에서 가장 큰 수를 \\(b\\)라 할 때, 다음 설명 중 옳은 것은?",
         options: [
@@ -213,7 +182,7 @@
         ],
         correct: 0
       },
-      // 유형 3 (5문항)
+      // [유형 3]
       {
         question: "다음 보기에서 옳은 것은 모두 몇 개인가?\n\\(ㄱ.\\) 두 홀수(단, 1이 아닌)의 곱은 합성수이다.\n\\(ㄴ.\\) 모든 자연수는 약수가 2개 이상이다.\n\\(ㄷ.\\) 합성수는 모두 짝수이다.\n\\(ㄹ.\\) 소수이면서 합성수인 자연수가 있다.\n\\(ㅁ.\\) 모든 합성수는 소수의 곱으로 나타낼 수 있다.",
         options: ["0", "1", "2", "3", "4"],
@@ -239,7 +208,7 @@
         options: ["0", "1", "2", "3", "4"],
         correct: 3
       },
-      // 유형 4 (5문항)
+      // [유형 4]
       {
         question: "n이 소수일 때, \\(165 \\div (n-4)\\)가 자연수가 되도록 하는 모든 \\(n\\)의 값의 합은?",
         options: ["125", "129", "127", "130", "135"],
@@ -275,7 +244,6 @@
     let mistakes = 0;
     let totalElapsed = 0;
     let energyInterval = null;
-    let questionStartTime = null;
     let difficultyTime = 0;
     let pointsPerQuestion = 0;
 
@@ -316,11 +284,15 @@
     // 다음 문제 표시 함수
     // -------------------------------
     function nextQuestion() {
+      // 만약 기회가 모두 소진되었다면 게임 종료
       if (mistakes >= 3) {
         endGame();
         return;
       }
-      // 문제 풀이는 무작위로 선택 (20문항을 모두 거친 후에도 반복)
+      // 다음 문제 버튼 숨기기
+      document.getElementById('nextButton').classList.add('hidden');
+
+      // 문제는 문제집에서 무작위 선택 (20문항을 모두 거친 후에도 반복)
       currentQuestion = questions[Math.floor(Math.random() * questions.length)];
 
       // 문제 내용 표시 (줄바꿈은 <br>로)
@@ -335,6 +307,7 @@
       opts.forEach(opt => {
         const btn = document.createElement('button');
         btn.innerHTML = opt.text;
+        btn.disabled = false; // 새 문제이므로 버튼 활성화
         btn.onclick = () => { checkAnswer(opt.index); };
         optionsContainer.appendChild(btn);
       });
@@ -345,11 +318,10 @@
         resetEnergyBar();
         startEnergyBar();
       }
-      questionStartTime = Date.now();
     }
 
     // -------------------------------
-    // 정답 검사 함수
+    // 정답 검사 함수 (문제 선택 후 즉시 판정 후 '다음문제' 버튼 활성화)
     // -------------------------------
     function checkAnswer(selectedIndex) {
       // 타이머 중지
@@ -357,17 +329,22 @@
         clearInterval(energyInterval);
         energyInterval = null;
       }
-      // 정답 확인 (보기의 원래 인덱스와 비교)
+      // 보기를 모두 비활성화
+      disableOptions();
+
       if (selectedIndex === currentQuestion.correct) {
         score += pointsPerQuestion;
         document.getElementById('score').innerText = "점수: " + score;
-        nextQuestion();
+        alert("정답입니다!");
       } else {
         mistakes++;
         alert("오답입니다. 정답: " + currentQuestion.options[currentQuestion.correct]);
         document.getElementById('chances').innerText = "남은 기회: " + (3 - mistakes);
-        if (mistakes >= 3) endGame();
-        else nextQuestion();
+      }
+      if (mistakes >= 3) {
+        endGame();
+      } else {
+        showNextButton();
       }
     }
 
@@ -389,19 +366,45 @@
         if (timeLeft <= 0) {
           clearInterval(energyInterval);
           energyInterval = null;
+          disableOptions();
           alert("시간 초과입니다. 정답: " + currentQuestion.options[currentQuestion.correct]);
           mistakes++;
           document.getElementById('chances').innerText = "남은 기회: " + (3 - mistakes);
-          nextQuestion();
+          if (mistakes >= 3) {
+            endGame();
+          } else {
+            showNextButton();
+          }
         }
       }, 100);
+    }
+
+    // -------------------------------
+    // 옵션 버튼 비활성화 함수
+    // -------------------------------
+    function disableOptions() {
+      const optionsContainer = document.getElementById('optionsContainer');
+      const btns = optionsContainer.getElementsByTagName('button');
+      for (let btn of btns) {
+        btn.disabled = true;
+      }
+    }
+
+    // -------------------------------
+    // 다음문제 버튼 보이기 함수
+    // -------------------------------
+    function showNextButton() {
+      document.getElementById('nextButton').classList.remove('hidden');
     }
 
     // -------------------------------
     // 게임 종료 함수
     // -------------------------------
     function endGame() {
+      // 게임 화면 숨기기
       document.getElementById('gameScreen').classList.add('hidden');
+      // 다음문제 버튼 숨김 처리
+      document.getElementById('nextButton').classList.add('hidden');
       document.getElementById('gameOverScreen').classList.remove('hidden');
       document.getElementById('finalScore').innerText =
         "최종 점수: " + score + ", 총 게임 시간: " + totalElapsed + "초";
@@ -411,6 +414,7 @@
     // 이벤트 리스너 등록
     // -------------------------------
     document.getElementById('startButton').addEventListener('click', startGame);
+    document.getElementById('nextButton').addEventListener('click', nextQuestion);
     document.getElementById('submitScoreButton').addEventListener('click', () => {
       const playerName = document.getElementById('playerName').value.trim();
       saveData("소인수분해 심화유형(1)", playerName, score, totalElapsed);
